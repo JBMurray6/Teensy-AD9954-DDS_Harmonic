@@ -64,7 +64,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Teensy AD9954 DDS_Harmonic;D:\Program Files (x86)\Arduino\libraries;D:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries;$(ProjectDir)..\libraries;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\avr;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\util;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\utils;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\avr;$(ProjectDir)D:\Program Files (x86)\Arduino\hardware\tools\arm\arm-none-eabi\include;D:\Program Files (x86)\Arduino\hardware\teensy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Teensy AD9954 DDS_Harmonic;D:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries\SPI;D:\Program Files (x86)\Arduino\libraries;D:\Program Files (x86)\Arduino\hardware\teensy\avr\libraries;$(ProjectDir)..\libraries;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\avr;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\util;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\utils;D:\Program Files (x86)\Arduino\hardware\teensy\avr\cores\teensy3\avr;$(ProjectDir)D:\Program Files (x86)\Arduino\hardware\tools\arm\arm-none-eabi\include;$(ProjectDir)..\Teensy AD9954 DDS;D:\Program Files (x86)\Arduino\hardware\teensy;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ForcedIncludeFiles>$(ProjectDir)__vm\.Teensy AD9954 DDS_Harmonic.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <WholeProgramOptimization>false</WholeProgramOptimization>
       <PreprocessorDefinitions>__HARDWARE_MK20dx256__;__HARDWARE_MK20DX256__;__MK20DX256__;TEENSYDUINO=140;ARDUINO=10804;F_CPU=96000000;USB_SERIAL;LAYOUT_US_ENGLISH;__cplusplus=201103L;_VMICRO_INTELLISENSE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
@@ -84,7 +84,13 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Teensy AD9954 DDS\AD9954.h" />
+    <ClInclude Include="..\Teensy AD9954 DDS\SerialFuncInterface.h" />
     <ClInclude Include="__vm\.Teensy AD9954 DDS_Harmonic.vsarduino.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Teensy AD9954 DDS\AD9954.cpp" />
+    <ClCompile Include="..\Teensy AD9954 DDS\SerialFuncInterface.cpp" />
   </ItemGroup>
   <PropertyGroup>
     <DebuggerFlavor>VisualMicroDebugger</DebuggerFlavor>

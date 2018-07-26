@@ -60,6 +60,12 @@ String GetFreq(String * S);
 String SetFreq(String * S);
 NameFuncCombo FreqFuncs = { FreqPrefix,SetFreq,GetFreq };
 
+const String VerbosePrefix = "Verbose";
+String GetVerbose(String * S);
+String SetVerbose(String * S);
+NameFuncCombo VerboseFuncs = { VerbosePrefix,SetVerbose,GetVerbose };
+int Verbosity = 1;
+
 const String AmplitudePrefix = "Amp";
 String GetAmplitude(String * S);
 String SetAmplitude(String * S);
@@ -124,11 +130,15 @@ const int NumHarms = 4;
 unsigned int HarmCount = 0;
 float HarmFreq[NumHarms];
 const unsigned int SmoothMask = 0x07;//will create length 8 smoothing
-float LastNFreq[SmoothMask + 1];
+float LastNGains[SmoothMask + 1];
+float LastNPhases[SmoothMask + 1];
 unsigned int CurrBuffPos = 0;
-float SmoothResp = 0;
-float CurrBestFreq = 0;
-float CurrBestResp = 0;
+float SmoothGain = 0;
+float SmoothPhase = 0;
+float CurrBestGainFreq = 0;
+float CurrBestPhaseFreq = 0;
+float CurrBestGainResp = 0;
+float CurrBestPhaseResp = 1E6;
 
 ///Setup functions 
 const String ReInitPrefix = "ReInit";
@@ -154,6 +164,7 @@ void setup()
 	FuncGen.initialize(DDSCLOCK_HZ, DDSCLOCK_MULT);
 	FuncGen.setFreq(1000000);
 	SerialFuncInterface.AddFunc(FreqFuncs);
+	SerialFuncInterface.AddFunc(VerboseFuncs);
 	SerialFuncInterface.AddFunc(AmplitudeFuncs);
 	SerialFuncInterface.AddFunc(FreqSweepFuncs);
 	SerialFuncInterface.AddFunc(SweepModeFuncs);
@@ -185,30 +196,38 @@ void loop()
 
 		if (SearchGoing)
 		{
-			LastNFreq[CurrBuffPos&SmoothMask] = ReadingSaveRing[SaveCount&MaxSavesMask].Gain;
+			LastNGains[CurrBuffPos&SmoothMask] = ReadingSaveRing[SaveCount&MaxSavesMask].Gain;
+			LastNPhases[CurrBuffPos&SmoothMask] = ReadingSaveRing[SaveCount&MaxSavesMask].Phase;
 
 			CurrBuffPos++;
-			SmoothResp = SmoothResp + ReadingSaveRing[SaveCount&MaxSavesMask].Gain - LastNFreq[(CurrBuffPos - 8)&SmoothMask];
+			SmoothGain = SmoothGain + ReadingSaveRing[SaveCount&MaxSavesMask].Gain - LastNGains[(CurrBuffPos - (SmoothMask+1))&SmoothMask];
+			SmoothPhase = SmoothPhase + ReadingSaveRing[SaveCount&MaxSavesMask].Phase - LastNPhases[(CurrBuffPos - (SmoothMask + 1))&SmoothMask];
 
-			if (SmoothResp > CurrBestResp)
+			if (SmoothGain > CurrBestGainResp)
 			{
-				CurrBestResp = SmoothResp;
-				CurrBestFreq = CurrSetFreq;
+				CurrBestGainResp = SmoothGain;
+				CurrBestGainFreq = CurrSetFreq;
 			}
+			if (SmoothPhase < CurrBestPhaseResp)
+			{
+				CurrBestPhaseResp = SmoothPhase;
+				CurrBestPhaseFreq = CurrSetFreq;
+			}
+
 		}
 
-		Serial.println(String(CurrSetFreq) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Gain) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Phase) + ", " + String(SmoothResp));
+		Serial.println(String(CurrSetFreq) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Gain) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Phase) + ", " + String(SmoothGain) + ", " + String(SmoothPhase));
 
 		SaveCount++;
 		if (CurrentSweep[2].Param.ival < del)//time
 		{
 			CurrSetFreq = CurrentSweep[1].Param.fval;//make sure to hit the last val
-			if (SweepMode_Cont ||(SearchGoing &&(HarmCount<NumHarms)))
+			if (SweepMode_Cont ||(SearchGoing &&(HarmCount<NumHarms))) //Are we in continuous sweep or not done searching
 			{
 				memcpy(&CurrentSweep, &LastSetSweep, sizeof FreqSweepParams);
 				if (SearchGoing)
 				{
-					HarmFreq[HarmCount] = CurrBestFreq;
+					HarmFreq[HarmCount] = CurrBestGainFreq;
 
 					SweepRate = SweepRate / (HarmCount * 2 + 1);
 					HarmCount++;			
@@ -217,16 +236,10 @@ void loop()
 					SweepRate = SweepRate * (HarmCount * 2 + 1);
 					
 
-					Serial.println("Peak at: " + String(CurrBestFreq));
+					Serial.println("Gain peak at: " + String(CurrBestGainFreq));
+					Serial.println("Phase min at: " + String(CurrBestPhaseFreq));
 
-					for (unsigned int i = 0; i < (SmoothMask + 1); i++)
-					{
-						LastNFreq[i] = 0;
-					}
-					CurrBuffPos = 0;
-					SmoothResp = 0;
-					CurrBestFreq = 0;
-					CurrBestResp = 0;
+					ResetSearchResults();
 					
 				}
 				else
@@ -241,7 +254,8 @@ void loop()
 			{
 				if (SearchGoing)
 				{
-					Serial.println("Peak at: " + String(CurrBestFreq));
+					Serial.println("Gain peak at: " + String(CurrBestGainFreq));
+					Serial.println("Phase min at: " + String(CurrBestPhaseFreq));
 				}
 				SweepGoing = false;
 				SearchGoing = false;
@@ -441,15 +455,8 @@ String SetSearchHamronicsSweep(String * S)
 	Serial.println(SSweep);
 	SetFreqSweep(&SSweep);
 
-	for (unsigned int i = 0; i < (SmoothMask + 1); i++)
-	{
-		LastNFreq[i] = 0;
-	}
-	CurrBuffPos = 0;
-	SmoothResp = 0;
-	CurrBestFreq = 0;
-	CurrBestResp = 0;
 	HarmCount = 0;
+	ResetSearchResults();
 
 	return "Started";
 }
@@ -457,4 +464,31 @@ String SetSearchHamronicsSweep(String * S)
 String GetSearchHamronicsSweep(String * S)
 {
 	return String(CurrentSweep[0].Param.fval);
+}
+
+
+String GetVerbose(String * S)
+{
+	Verbosity = S->toInt();
+	return "Set to " + String(Verbosity);
+}
+String SetVerbose(String * S)
+{
+	return "Set to " + String(Verbosity);
+}
+
+
+void ResetSearchResults()
+{
+	for (unsigned int i = 0; i < (SmoothMask + 1); i++)
+	{
+		LastNGains[i] = 0;
+		LastNPhases[i] = 0;
+	}
+	CurrBuffPos = 0;
+	SmoothGain = 0;
+	CurrBestGainFreq = 0;
+	CurrBestPhaseFreq = 0;
+	CurrBestGainResp = 0;
+	CurrBestPhaseResp = 1E6;
 }
