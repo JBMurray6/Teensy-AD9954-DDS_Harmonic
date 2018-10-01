@@ -177,8 +177,7 @@ void setup()
 
 void loop()
 {
-
-	/* add main program code here */
+	//Check the serial messages and implement them based on the registered functions
 	SerialFuncInterface.ParseSerial();
 
 	if (SweepGoing)
@@ -215,8 +214,11 @@ void loop()
 			}
 
 		}
-
-		Serial.println(String(CurrSetFreq) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Gain) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Phase) + ", " + String(SmoothGain) + ", " + String(SmoothPhase));
+		if (Verbosity >= 1)
+		{
+			Serial.println(String(CurrSetFreq) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Gain) + ", " + String(ReadingSaveRing[SaveCount&MaxSavesMask].Phase) + ", " + String(SmoothGain) + ", " + String(SmoothPhase));
+		}
+		
 
 		SaveCount++;
 		if (CurrentSweep[2].Param.ival < del)//time
@@ -235,9 +237,18 @@ void loop()
 					CurrentSweep[1].Param.fval = CurrentSweep[1].Param.fval * (HarmCount * 2 + 1);//Stop
 					SweepRate = SweepRate * (HarmCount * 2 + 1);
 					
+					if (Verbosity >= 1)
+					{
+						Serial.println("Gain peak at: " + String(CurrBestGainFreq));
+						Serial.println("Phase min at: " + String(CurrBestPhaseFreq));
+					}
+					else
+					{ 
+						Serial.println(String(CurrBestGainFreq)+","+String(CurrBestGainResp)+ "," + String(CurrBestPhaseFreq) + "," + String(CurrBestPhaseResp) );
+						
+					}
 
-					Serial.println("Gain peak at: " + String(CurrBestGainFreq));
-					Serial.println("Phase min at: " + String(CurrBestPhaseFreq));
+
 
 					ResetSearchResults();
 					
